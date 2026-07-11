@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>decibel — an interactive dB-math playground</title>
+  <meta name="description" content="Three interactive laboratories for decibel math: the dial, the shape of gain, and the link budget.">
+  <link rel="preload" href="assets/fonts/SpaceGrotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/JetBrainsMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2338E1FF' stroke-width='3' stroke-dasharray='61 21' stroke-linecap='round' transform='rotate(135 16 16)'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FF5CA8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="nebula" aria-hidden="true"></div>
+
+  <header class="wrap hero">
+    <p class="eyebrow mono">signal math &middot; an interactive field guide</p>
+    <h1 class="title">decibel</h1>
+    <p class="tagline">Ten times log ten. Three laboratories for the only formula radio engineers actually use.</p>
+    <nav class="lab-nav">
+      <a class="chip" href="#lab-01">01 &middot; the dial</a>
+      <a class="chip" href="#lab-02">02 &middot; the shape of gain</a>
+      <a class="chip" href="#lab-03">03 &middot; the link budget</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ============================ LAB 01 ============================ -->
+    <section class="lab lab-cyan" id="lab-01">
+      <header class="lab-head">
+        <p class="lab-index mono">LAB 01</p>
+        <h2>the dial</h2>
+        <p class="lab-blurb">Drag the needle. Every 10&nbsp;dB is a factor of ten in power — every 3&nbsp;dB, a factor of two. The ladder below pins the numbers to signals you already live inside.</p>
+      </header>
+      <div class="lab-body">
+        <div class="dial-grid">
+          <div class="glass panel dial-panel">
+            <div id="dial-stage" role="slider" tabindex="0" aria-label="decibel dial, minus 60 to plus 60 dB"
+                 aria-valuemin="-60" aria-valuemax="60" aria-valuenow="0"></div>
+            <div class="chip-row" id="dial-chips">
+              <button class="chip" data-step="-30">−30</button>
+              <button class="chip" data-step="-10">−10</button>
+              <button class="chip" data-step="-3">−3</button>
+              <button class="chip" data-step="3">+3</button>
+              <button class="chip" data-step="10">+10</button>
+              <button class="chip" data-step="30">+30</button>
+              <button class="chip chip-ghost" data-step="reset">reset</button>
+            </div>
+          </div>
+          <div class="glass panel readout-panel">
+            <div class="readout-block">
+              <p class="readout-label mono">decibels</p>
+              <p class="readout mono" id="ro-db">+0.0 dB</p>
+            </div>
+            <div class="readout-block">
+              <p class="readout-label mono">power ratio</p>
+              <p class="readout mono" id="ro-ratio">×1.00</p>
+            </div>
+            <div class="readout-block">
+              <p class="readout-label mono">read as dBm &rarr; watts</p>
+              <p class="readout mono" id="ro-watts">1.00 mW</p>
+            </div>
+            <div class="powerbar-block">
+              <p class="readout-label mono">log power line <span class="dim">1 nW &rarr; 1 kW</span></p>
+              <canvas id="power-bar"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="glass panel ladder-panel">
+          <p class="readout-label mono">the dBm ladder <span class="dim">— where real signals live</span></p>
+          <canvas id="dbm-ladder"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ LAB 02 ============================ -->
+    <section class="lab lab-violet" id="lab-02">
+      <header class="lab-head">
+        <p class="lab-index mono">LAB 02</p>
+        <h2>the shape of gain</h2>
+        <p class="lab-blurb">Antennas don&rsquo;t create power, they aim it. Morph between real pattern families, then build a phased array and steer the beam — the amber wedge is the half-power beamwidth.</p>
+      </header>
+      <div class="lab-body">
+        <div class="gain-grid">
+          <div class="glass panel polar-panel">
+            <canvas id="polar-canvas"></canvas>
+            <div class="stat-row">
+              <div class="stat">
+                <p class="readout-label mono">peak gain</p>
+                <p class="stat-val mono" id="st-peak">17.0 dBi</p>
+              </div>
+              <div class="stat">
+                <p class="readout-label mono">&minus;3 dB beamwidth</p>
+                <p class="stat-val mono" id="st-hpbw">65&deg;</p>
+              </div>
+              <div class="stat">
+                <p class="readout-label mono">front / back</p>
+                <p class="stat-val mono" id="st-fb">25 dB</p>
+              </div>
+            </div>
+          </div>
+          <div class="glass panel gain-controls">
+            <p class="readout-label mono">pattern presets</p>
+            <div class="chip-row chips-wrap" id="preset-chips">
+              <button class="chip" data-preset="isotropic">isotropic</button>
+              <button class="chip" data-preset="dipole">dipole</button>
+              <button class="chip" data-preset="patch">patch</button>
+              <button class="chip is-active" data-preset="sector">sector 65&deg;</button>
+              <button class="chip" data-preset="yagi">yagi</button>
+              <button class="chip" data-preset="array">phased array</button>
+            </div>
+            <div id="array-builder" class="array-builder is-disabled">
+              <div class="slider-row">
+                <label class="mono" for="arr-n">elements <output class="mono" id="arr-n-out">8</output></label>
+                <input type="range" id="arr-n" min="2" max="16" step="1" value="8">
+              </div>
+              <div class="slider-row">
+                <label class="mono" for="arr-d">spacing <output class="mono" id="arr-d-out">0.50 λ</output></label>
+                <input type="range" id="arr-d" min="0.15" max="1" step="0.01" value="0.5">
+              </div>
+              <div class="slider-row">
+                <label class="mono" for="arr-steer">steer <output class="mono" id="arr-steer-out">0&deg;</output></label>
+                <input type="range" id="arr-steer" min="-60" max="60" step="1" value="0">
+              </div>
+              <p class="hint mono">AF(θ) = sin(Nu/2) / N·sin(u/2), u = 2πd(sinθ − sinθ₀)</p>
+            </div>
+            <p class="hint mono" id="pattern-note">3GPP-style sector: −min(12(θ/65°)², 25 dB), calibrated to 17 dBi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ LAB 03 ============================ -->
+    <section class="lab lab-pink" id="lab-03">
+      <header class="lab-head">
+        <p class="lab-index mono">LAB 03</p>
+        <h2>the link budget</h2>
+        <p class="lab-blurb">Every link is an argument between gains and losses, fought in dB and settled in picowatts. Stretch the path, switch bands, add rain — and watch the waterfall decide.</p>
+      </header>
+      <div class="lab-body">
+        <div class="stage-row">
+          <div class="glass panel stage-card">
+            <p class="stage-label mono">TX power</p>
+            <p class="stage-val mono" id="lb-tx-out">+30.0 dBm</p>
+            <input type="range" id="lb-tx" min="0" max="46" step="0.5" value="30">
+          </div>
+          <div class="stage-arrow mono" aria-hidden="true">&rarr;</div>
+          <div class="glass panel stage-card">
+            <p class="stage-label mono">cable loss</p>
+            <p class="stage-val mono" id="lb-cable-out">−2.0 dB</p>
+            <input type="range" id="lb-cable" min="0" max="10" step="0.1" value="2">
+          </div>
+          <div class="stage-arrow mono" aria-hidden="true">&rarr;</div>
+          <div class="glass panel stage-card">
+            <p class="stage-label mono">TX antenna</p>
+            <p class="stage-val mono" id="lb-txg-out">+17.0 dBi</p>
+            <input type="range" id="lb-txg" min="0" max="30" step="0.5" value="17">
+          </div>
+          <div class="stage-arrow mono" aria-hidden="true">&rarr;</div>
+          <div class="glass panel stage-card stage-path">
+            <p class="stage-label mono">the path</p>
+            <p class="stage-val mono" id="lb-path-out">−109.6 dB</p>
+            <div class="slider-row">
+              <label class="mono" for="lb-dist">distance <output class="mono" id="lb-dist-out">2.0 km</output></label>
+              <input type="range" id="lb-dist" min="0" max="1" step="0.001" value="0.522">
+            </div>
+            <div class="chip-row" id="band-chips">
+              <button class="chip" data-band="900">900 MHz</button>
+              <button class="chip is-active" data-band="3600">3.6 GHz</button>
+              <button class="chip" data-band="28000">28 GHz</button>
+            </div>
+            <button class="chip chip-toggle" id="lb-rain" aria-pressed="false">heavy rain &middot; off</button>
+          </div>
+          <div class="stage-arrow mono" aria-hidden="true">&rarr;</div>
+          <div class="glass panel stage-card">
+            <p class="stage-label mono">RX antenna</p>
+            <p class="stage-val mono" id="lb-rxg-out">+0.0 dBi</p>
+            <input type="range" id="lb-rxg" min="0" max="30" step="0.5" value="0">
+          </div>
+        </div>
+        <div class="glass panel waterfall-panel">
+          <canvas id="waterfall"></canvas>
+          <div class="verdict-row">
+            <div class="verdict-pill mono ok" id="lb-verdict">LINK CLOSES &middot; +19.5 dB margin</div>
+            <p class="arriving mono" id="lb-arriving">physically arriving: 347 pW</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap footer">
+    <div class="glass panel notes">
+      <p class="lab-index mono">MODEL NOTES</p>
+      <ul class="mono">
+        <li>dB = 10·log₁₀(P₂/P₁); power ratio = 10^(dB/10). dBm is absolute: P = 10^(dBm/10) mW.</li>
+        <li>Ladder anchors are typical field values (GPS at the surface ≈ −127 dBm, LTE cell edge ≈ −100 dBm, strong Wi-Fi ≈ −70 dBm, phone uplink ≈ +23 dBm, macro cell ≈ +47 dBm, big FM broadcast ≈ +80 dBm) — real deployments vary.</li>
+        <li>Array factor: AF(θ) = sin(Nu/2)/(N·sin(u/2)), u = 2πd(sinθ − sinθ₀), spacing d in wavelengths; plotted as AF² × element pattern. Peak dBi for the array is approximated as element gain + 10·log₁₀(N).</li>
+        <li>Sector preset is the 3GPP model −min(12(θ/θ₃dB)², 25 dB). Dipole is the exact half-wave pattern [cos(½π·sinθ)/cosθ]². Patch and yagi are stylized cosine-power shapes calibrated to typical peak gains — beamwidth and F/B numbers are measured from the plotted curve, not quoted.</li>
+        <li>FSPL(dB) = 32.44 + 20·log₁₀(d_km) + 20·log₁₀(f_MHz). Heavy rain adds α·d with α ≈ 0.01 / 0.1 / 10 dB/km at 900 MHz / 3.6 GHz / 28 GHz (≈50 mm/h, ITU-R P.838 ballpark).</li>
+        <li>Noise floor = −174 dBm/Hz + 10·log₁₀(BW) + 7 dB NF, with BW = 10 / 100 / 400 MHz per band. Sensitivity line = floor + 3 dB required SNR. A real modem&rsquo;s number moves with modulation and coding; this one is fixed so the geometry stays legible.</li>
+      </ul>
+    </div>
+    <p class="colophon mono">decibel &middot; vanilla html / css / js &middot; canvas + svg &middot; no dependencies</p>
+  </footer>
+
+  <script src="assets/main.js"></script>
+  <script src="assets/lab-dial.js"></script>
+  <script src="assets/lab-gain.js"></script>
+  <script src="assets/lab-link.js"></script>
+</body>
+</html>
