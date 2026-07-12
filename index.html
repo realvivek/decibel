@@ -4,25 +4,307 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>decibel — an interactive dB-math playground</title>
-  <meta name="description" content="Three interactive laboratories for decibel math: the dial, the shape of gain, and the link budget.">
+  <meta name="description" content="Three interactive laboratories for decibel math, set on one bright small-cell street: the dial, the shape of gain, and the link budget.">
   <link rel="preload" href="assets/fonts/SpaceGrotesk-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/JetBrainsMono-Bold.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%2338E1FF' stroke-width='3' stroke-dasharray='61 21' stroke-linecap='round' transform='rotate(135 16 16)'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FF5CA8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%230999C4' stroke-width='3' stroke-dasharray='61 21' stroke-linecap='round' transform='rotate(135 16 16)'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23E5548E'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
   <div class="nebula" aria-hidden="true"></div>
 
+  <!-- ================= shared scene sprites & textures ================= -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="grad-sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#BEE2F7"/><stop offset="1" stop-color="#EDF7FC"/>
+      </linearGradient>
+      <linearGradient id="grad-glass" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#CBE7F6"/><stop offset="1" stop-color="#F0F9FE"/>
+      </linearGradient>
+      <linearGradient id="grad-ant" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#FFFFFF"/><stop offset="0.55" stop-color="#EDF2F7"/><stop offset="1" stop-color="#D7E0E9"/>
+      </linearGradient>
+
+      <pattern id="tex-siding" width="6" height="7" patternUnits="userSpaceOnUse">
+        <path d="M0 6.5 H6" stroke="rgba(23,41,60,0.10)" stroke-width="0.8"/>
+      </pattern>
+      <pattern id="tex-brick" width="26" height="14" patternUnits="userSpaceOnUse">
+        <path d="M0 0.5 H26 M0 7.5 H26" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+        <path d="M8 0.5 V7.5 M21 0.5 V7.5 M2 7.5 V14 M15 7.5 V14" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      </pattern>
+      <pattern id="tex-shingle" width="22" height="9" patternUnits="userSpaceOnUse">
+        <path d="M0 8.5 H22 M0 8.5 a5.5 4 0 0 0 11 0 a5.5 4 0 0 0 11 0" fill="none" stroke="rgba(23,41,60,0.16)" stroke-width="0.9"/>
+      </pattern>
+      <pattern id="tex-dots" width="13" height="13" patternUnits="userSpaceOnUse">
+        <circle cx="3.5" cy="4" r="1.5" fill="rgba(255,255,255,0.20)"/>
+        <circle cx="9.5" cy="10" r="1.3" fill="rgba(255,255,255,0.14)"/>
+        <circle cx="10" cy="3" r="1.1" fill="rgba(23,41,60,0.07)"/>
+      </pattern>
+      <pattern id="tex-grass" width="11" height="8" patternUnits="userSpaceOnUse">
+        <path d="M2 8 V5.4 M6 7 V4.8 M9 8 V5.8" stroke="rgba(23,41,60,0.13)" stroke-width="0.9" stroke-linecap="round"/>
+      </pattern>
+      <pattern id="tex-conc" width="18" height="18" patternUnits="userSpaceOnUse">
+        <circle cx="4" cy="6" r="0.8" fill="rgba(23,41,60,0.07)"/>
+        <circle cx="13" cy="13" r="0.7" fill="rgba(23,41,60,0.06)"/>
+        <circle cx="10" cy="2" r="0.6" fill="rgba(255,255,255,0.35)"/>
+      </pattern>
+      <pattern id="tex-asph" width="15" height="15" patternUnits="userSpaceOnUse">
+        <circle cx="3" cy="4" r="0.8" fill="rgba(255,255,255,0.10)"/>
+        <circle cx="11" cy="9" r="0.7" fill="rgba(23,41,60,0.10)"/>
+        <circle cx="7" cy="13" r="0.6" fill="rgba(255,255,255,0.08)"/>
+      </pattern>
+
+      <!-- round leafy tree, feet at origin -->
+      <g id="sp-tree">
+        <ellipse cx="0" cy="2" rx="24" ry="5.5" fill="rgba(23,41,60,0.10)"/>
+        <path d="M-3.5 0 L-2.5 -40 H2.5 L3.5 0 Z" fill="#8A5A3B"/>
+        <path d="M0 -40 L-9 -52 M0 -44 L8 -56" stroke="#8A5A3B" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <circle cx="-19" cy="-52" r="21" fill="var(--leaf, #5FA55B)"/>
+        <circle cx="19" cy="-54" r="20" fill="var(--leaf, #5FA55B)"/>
+        <circle cx="0" cy="-70" r="26" fill="var(--leaf, #5FA55B)"/>
+        <circle cx="-19" cy="-52" r="21" fill="url(#tex-dots)"/>
+        <circle cx="19" cy="-54" r="20" fill="url(#tex-dots)"/>
+        <circle cx="0" cy="-70" r="26" fill="url(#tex-dots)"/>
+        <circle cx="-9" cy="-77" r="11" fill="rgba(255,255,255,0.20)"/>
+      </g>
+
+      <!-- conifer, feet at origin -->
+      <g id="sp-pine">
+        <ellipse cx="0" cy="2" rx="17" ry="4.5" fill="rgba(23,41,60,0.10)"/>
+        <rect x="-2.5" y="-12" width="5" height="13" fill="#8A5A3B"/>
+        <path d="M0 -86 L17 -56 H-17 Z" fill="#4C8B57"/>
+        <path d="M0 -68 L21 -34 H-21 Z" fill="#579663"/>
+        <path d="M0 -48 L25 -10 H-25 Z" fill="#63A16E"/>
+        <path d="M0 -48 L25 -10 H-25 Z" fill="url(#tex-dots)"/>
+      </g>
+
+      <g id="sp-bush">
+        <ellipse cx="0" cy="0" rx="16" ry="10" fill="var(--leaf, #6FAF6A)"/>
+        <ellipse cx="11" cy="1" rx="10" ry="7" fill="var(--leaf, #6FAF6A)"/>
+        <ellipse cx="0" cy="0" rx="16" ry="10" fill="url(#tex-dots)"/>
+      </g>
+
+      <!-- gabled siding house, ~200 wide, ground at y=0 -->
+      <g id="sp-house-a">
+        <ellipse cx="100" cy="2" rx="102" ry="7" fill="rgba(23,41,60,0.09)"/>
+        <rect x="10" y="-104" width="180" height="104" fill="var(--wall, #F5C878)"/>
+        <rect x="10" y="-104" width="180" height="104" fill="url(#tex-siding)"/>
+        <path d="M0 -104 L100 -158 L200 -104 L192 -104 L100 -150 L8 -104 Z" fill="var(--roof, #46586B)"/>
+        <path d="M8 -104 L100 -150 L192 -104 Z" fill="var(--roof, #46586B)"/>
+        <path d="M8 -104 L100 -150 L192 -104 Z" fill="url(#tex-shingle)"/>
+        <rect x="140" y="-146" width="12" height="26" fill="#8A5A48"/>
+        <rect x="138" y="-150" width="16" height="5" fill="#5D6E82"/>
+        <g>
+          <rect x="30" y="-84" width="34" height="40" rx="2" fill="#FFFFFF"/>
+          <rect x="33" y="-81" width="28" height="34" fill="url(#grad-glass)"/>
+          <path d="M47 -81 V-47 M33 -64 H61" stroke="#9FB4C6" stroke-width="1.5"/>
+        </g>
+        <g>
+          <rect x="136" y="-84" width="34" height="40" rx="2" fill="#FFFFFF"/>
+          <rect x="139" y="-81" width="28" height="34" fill="url(#grad-glass)"/>
+          <path d="M153 -81 V-47 M139 -64 H167" stroke="#9FB4C6" stroke-width="1.5"/>
+        </g>
+        <rect x="86" y="-70" width="30" height="70" rx="2" fill="var(--door, #2E4A66)"/>
+        <rect x="90" y="-64" width="22" height="26" rx="1" fill="url(#grad-glass)"/>
+        <circle cx="110" cy="-34" r="2" fill="#E9A23B"/>
+        <rect x="80" y="-2" width="42" height="4" rx="2" fill="#D8D2C2"/>
+      </g>
+
+      <!-- brick house with hip roof, ~190 wide -->
+      <g id="sp-house-b">
+        <ellipse cx="95" cy="2" rx="98" ry="7" fill="rgba(23,41,60,0.09)"/>
+        <rect x="8" y="-98" width="174" height="98" fill="var(--wall, #DE8A6C)"/>
+        <rect x="8" y="-98" width="174" height="98" fill="url(#tex-brick)"/>
+        <path d="M0 -98 L34 -136 H156 L190 -98 Z" fill="var(--roof, #7B4437)"/>
+        <path d="M0 -98 L34 -136 H156 L190 -98 Z" fill="url(#tex-shingle)"/>
+        <g>
+          <rect x="26" y="-80" width="32" height="38" rx="2" fill="#FFFFFF"/>
+          <rect x="29" y="-77" width="26" height="32" fill="url(#grad-glass)"/>
+          <path d="M42 -77 V-45 M29 -61 H55" stroke="#9FB4C6" stroke-width="1.5"/>
+          <rect x="24" y="-42" width="36" height="4" fill="#FFFFFF"/>
+        </g>
+        <g>
+          <rect x="130" y="-80" width="32" height="38" rx="2" fill="#FFFFFF"/>
+          <rect x="133" y="-77" width="26" height="32" fill="url(#grad-glass)"/>
+          <path d="M146 -77 V-45 M133 -61 H159" stroke="#9FB4C6" stroke-width="1.5"/>
+          <rect x="128" y="-42" width="36" height="4" fill="#FFFFFF"/>
+        </g>
+        <rect x="79" y="-66" width="30" height="66" rx="2" fill="var(--door, #35597A)"/>
+        <rect x="83" y="-60" width="22" height="24" rx="1" fill="url(#grad-glass)"/>
+        <circle cx="103" cy="-32" r="2" fill="#E9A23B"/>
+      </g>
+
+      <!-- modern flat-roof house with garage, ~230 wide -->
+      <g id="sp-house-c">
+        <ellipse cx="115" cy="2" rx="118" ry="7" fill="rgba(23,41,60,0.09)"/>
+        <rect x="0" y="-118" width="140" height="118" fill="var(--wall, #A7C7E0)"/>
+        <rect x="0" y="-118" width="140" height="118" fill="url(#tex-siding)"/>
+        <rect x="-6" y="-126" width="152" height="10" rx="3" fill="#46586B"/>
+        <rect x="140" y="-78" width="90" height="78" fill="#EDE7D8"/>
+        <rect x="140" y="-78" width="90" height="78" fill="url(#tex-siding)"/>
+        <rect x="136" y="-86" width="98" height="10" rx="3" fill="#46586B"/>
+        <g>
+          <rect x="18" y="-98" width="52" height="56" rx="2" fill="#FFFFFF"/>
+          <rect x="21" y="-95" width="46" height="50" fill="url(#grad-glass)"/>
+          <path d="M44 -95 V-45" stroke="#9FB4C6" stroke-width="1.5"/>
+        </g>
+        <rect x="92" y="-70" width="30" height="70" rx="2" fill="var(--door, #21445F)"/>
+        <circle cx="98" cy="-36" r="2" fill="#E9A23B"/>
+        <rect x="150" y="-64" width="70" height="64" rx="2" fill="#F5F2E9"/>
+        <path d="M150 -50 H220 M150 -36 H220 M150 -22 H220 M150 -8 H220" stroke="rgba(23,41,60,0.15)" stroke-width="1.4"/>
+      </g>
+
+      <!-- hatchback, nose to the right, wheels at y=0 -->
+      <g id="sp-car">
+        <ellipse cx="0" cy="1" rx="58" ry="6" fill="rgba(23,41,60,0.13)"/>
+        <path d="M-52 -8 Q-54 -22 -40 -24 L-26 -26 Q-8 -40 14 -38 L34 -34 Q52 -30 54 -18 Q56 -8 48 -8 Z" fill="var(--car, #EF7D5F)"/>
+        <path d="M-24 -26 Q-8 -38 13 -36 L28 -33 L26 -26 Z" fill="url(#grad-glass)" stroke="#C6624A" stroke-width="1"/>
+        <path d="M2 -36 L1 -26" stroke="#C6624A" stroke-width="1.4"/>
+        <circle cx="-32" cy="-6" r="9" fill="#2A3947"/>
+        <circle cx="-32" cy="-6" r="3.6" fill="#C9D4DE"/>
+        <circle cx="32" cy="-6" r="9" fill="#2A3947"/>
+        <circle cx="32" cy="-6" r="3.6" fill="#C9D4DE"/>
+        <rect x="50" y="-18" width="5" height="5" rx="2" fill="#FFE9B8"/>
+        <rect x="-55" y="-16" width="4" height="4" rx="1.5" fill="#E56A6A"/>
+      </g>
+
+      <!-- pedestrian mid-stride, feet at origin -->
+      <g id="sp-person-a">
+        <ellipse cx="0" cy="1" rx="10" ry="3" fill="rgba(23,41,60,0.14)"/>
+        <path d="M-1.5 -13 L-7 0 M1.5 -13 L6 -1" stroke="#33475C" stroke-width="5" stroke-linecap="round"/>
+        <path d="M-6.5 -30 Q-8 -14 -4 -13 L4 -13 Q8 -14 6.5 -30 Q4 -35 0 -35 Q-4 -35 -6.5 -30 Z" fill="var(--shirt, #4A7FD6)"/>
+        <path d="M5 -30 L10 -20" stroke="var(--shirt, #4A7FD6)" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="0" cy="-41" r="6.5" fill="#E8B48E"/>
+        <path d="M-6.5 -42 A6.5 6.5 0 0 1 6.5 -42 L5 -46 Q0 -49 -5 -46 Z" fill="#3A2E28"/>
+      </g>
+
+      <!-- standing figure looking at a lit phone, feet at origin -->
+      <g id="sp-person-phone">
+        <ellipse cx="0" cy="1" rx="10" ry="3" fill="rgba(23,41,60,0.14)"/>
+        <path d="M-2.5 -13 L-3 0 M2.5 -13 L3 0" stroke="#33475C" stroke-width="5" stroke-linecap="round"/>
+        <path d="M-6.5 -30 Q-8 -14 -4 -13 L4 -13 Q8 -14 6.5 -30 Q4 -35 0 -35 Q-4 -35 -6.5 -30 Z" fill="var(--shirt, #D96D9A)"/>
+        <path d="M6 -28 Q11 -27 11 -23" stroke="var(--shirt, #D96D9A)" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="1" cy="-41" r="6.5" fill="#E8B48E"/>
+        <path d="M-5.5 -42 A6.5 6.5 0 0 1 7.5 -42 L6 -46.5 Q1 -49.5 -4 -46.5 Z" fill="#5A4632"/>
+        <rect x="8.5" y="-30" width="7" height="12" rx="1.6" fill="#17293C"/>
+        <rect x="9.6" y="-28.6" width="4.8" height="8.4" rx="0.8" fill="#A5E8FA"/>
+      </g>
+
+      <!-- small dog, feet at origin -->
+      <g id="sp-dog">
+        <ellipse cx="0" cy="1" rx="10" ry="2.6" fill="rgba(23,41,60,0.12)"/>
+        <path d="M-6 -6 L-6 0 M-2 -6 L-2 0 M3 -6 L3 0 M7 -6 L7 0" stroke="#A9834F" stroke-width="2.6" stroke-linecap="round"/>
+        <ellipse cx="0" cy="-9" rx="10" ry="5.5" fill="#C9A26B"/>
+        <circle cx="11" cy="-13" r="4.6" fill="#C9A26B"/>
+        <path d="M8.6 -17 L7.6 -21 L11 -18 Z M13.4 -17 L15.4 -20.6 L15.8 -16.4 Z" fill="#A9834F"/>
+        <path d="M-9 -11 Q-14 -14 -13 -18" stroke="#C9A26B" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+        <circle cx="13.6" cy="-13.6" r="0.9" fill="#17293C"/>
+      </g>
+
+      <!-- THE hero object: light pole + small cell radio + panel antenna.
+           Base at origin, ~255 tall. -->
+      <g id="sp-pole-cell">
+        <ellipse cx="0" cy="2" rx="16" ry="4.5" fill="rgba(23,41,60,0.14)"/>
+        <path d="M-4.5 0 L-2.6 -238 H2.6 L4.5 0 Z" fill="#7E8B98"/>
+        <path d="M-2 0 L-0.9 -238 H0.4 L1 0 Z" fill="rgba(255,255,255,0.35)"/>
+        <rect x="-6.5" y="-10" width="13" height="10" rx="2" fill="#66727E"/>
+        <!-- luminaire arm + head -->
+        <path d="M0 -232 Q26 -232 40 -226" fill="none" stroke="#66727E" stroke-width="4" stroke-linecap="round"/>
+        <rect x="34" y="-228" width="26" height="9" rx="4.5" fill="#55636F"/>
+        <ellipse cx="47" cy="-218.5" rx="9" ry="3" fill="#FFE9B8" opacity="0.9"/>
+        <!-- small cell radio unit, strapped mid-pole -->
+        <rect x="-9" y="-156" width="4" height="62" fill="#55636F"/>
+        <rect x="-11" y="-150" width="22" height="7" rx="2" fill="#55636F"/>
+        <rect x="-11" y="-108" width="22" height="7" rx="2" fill="#55636F"/>
+        <rect x="-24" y="-154" width="20" height="58" rx="5" fill="#EDF1F5" stroke="#AEBDCA" stroke-width="1.4"/>
+        <path d="M-20 -144 H-8 M-20 -136 H-8 M-20 -128 H-8 M-20 -120 H-8" stroke="#B9C6D2" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="-14" cy="-104" r="2.2" fill="#4C9F45"/>
+        <!-- cable from radio up to the antenna -->
+        <path d="M-14 -154 Q-16 -186 -6 -206 Q-2 -214 -2 -222" fill="none" stroke="#37475A" stroke-width="2.2"/>
+        <!-- canister panel antenna on top -->
+        <rect x="-3" y="-246" width="6" height="10" fill="#66727E"/>
+        <rect x="-10" y="-292" width="20" height="48" rx="9" fill="url(#grad-ant)" stroke="#AEBDCA" stroke-width="1.4"/>
+        <path d="M-4 -286 V-250" stroke="rgba(255,255,255,0.85)" stroke-width="2.4" stroke-linecap="round"/>
+      </g>
+
+      <g id="sp-cloud">
+        <ellipse cx="0" cy="0" rx="34" ry="13" fill="#FFFFFF" opacity="0.95"/>
+        <ellipse cx="-22" cy="4" rx="20" ry="10" fill="#FFFFFF" opacity="0.9"/>
+        <ellipse cx="24" cy="4" rx="22" ry="10" fill="#FFFFFF" opacity="0.9"/>
+      </g>
+    </defs>
+  </svg>
+
   <header class="wrap hero">
     <p class="eyebrow mono">signal math &middot; an interactive field guide</p>
     <h1 class="title">decibel</h1>
-    <p class="tagline">Ten times log ten. Three laboratories for the only formula radio engineers actually use.</p>
+    <p class="tagline">Ten times log ten. Three laboratories for the only formula radio engineers actually use &mdash; set on one bright small-cell street.</p>
     <nav class="lab-nav">
       <a class="chip" href="#lab-01">01 &middot; the dial</a>
       <a class="chip" href="#lab-02">02 &middot; the shape of gain</a>
       <a class="chip" href="#lab-03">03 &middot; the link budget</a>
     </nav>
+
+    <div class="glass scene-card scene-anim" id="hero-scene-card">
+      <svg id="hero-scene" viewBox="0 -24 1200 454" role="img"
+           aria-label="A bright residential street: houses, trees, a driving car, pedestrians, and a light pole carrying a small cell radio with a panel antenna, radiating signal rings.">
+        <rect x="0" y="-24" width="1200" height="326" fill="url(#grad-sky)"/>
+        <g id="px-sky">
+          <circle cx="1052" cy="66" r="34" fill="#FFD98A"/>
+          <circle cx="1052" cy="66" r="52" fill="rgba(255,217,138,0.30)"/>
+          <g transform="translate(210 74)"><g class="scene-cloud"><use href="#sp-cloud"/></g></g>
+          <g transform="translate(640 44)"><g class="scene-cloud c2"><use href="#sp-cloud" transform="scale(0.8)"/></g></g>
+          <g transform="translate(920 108)"><g class="scene-cloud"><use href="#sp-cloud" transform="scale(0.6)"/></g></g>
+        </g>
+
+        <g id="px-back">
+          <rect x="0" y="252" width="1200" height="26" fill="#A9CF90"/>
+          <rect x="0" y="252" width="1200" height="26" fill="url(#tex-grass)"/>
+          <g transform="translate(52 276)"><g class="scene-tree t2"><use href="#sp-pine" transform="scale(0.9)"/></g></g>
+          <g transform="translate(122 276)"><use href="#sp-house-b" style="--wall:#E9B45E; --roof:#5B4A63"/></g>
+          <g transform="translate(360 276)"><g class="scene-tree"><use href="#sp-tree" style="--leaf:#5FA55B"/></g></g>
+          <g transform="translate(452 276)"><use href="#sp-house-a" style="--wall:#F0876C; --roof:#46586B; --door:#25415C"/></g>
+          <g transform="translate(716 276)"><g class="scene-tree t3"><use href="#sp-tree" style="--leaf:#6FAF6A" transform="scale(0.85)"/></g></g>
+          <g transform="translate(788 276)"><use href="#sp-house-c"/></g>
+          <g transform="translate(1082 276)"><g class="scene-tree t2"><use href="#sp-tree" style="--leaf:#4C8B57" transform="scale(1.05)"/></g></g>
+          <g transform="translate(330 272)"><use href="#sp-bush" transform="scale(0.8)"/></g>
+          <g transform="translate(700 273)"><use href="#sp-bush" style="--leaf:#7BB871" transform="scale(0.7)"/></g>
+        </g>
+
+        <g id="px-mid">
+          <rect x="0" y="278" width="1200" height="26" fill="#E9E4D6"/>
+          <rect x="0" y="278" width="1200" height="26" fill="url(#tex-conc)"/>
+          <path d="M96 278 V304 M192 278 V304 M288 278 V304 M384 278 V304 M480 278 V304 M576 278 V304 M672 278 V304 M768 278 V304 M864 278 V304 M960 278 V304 M1056 278 V304" stroke="rgba(23,41,60,0.10)" stroke-width="1.5"/>
+
+          <!-- signal rings from the panel antenna -->
+          <g transform="translate(300 36)">
+            <circle class="sig-ring" r="46" fill="none" stroke="var(--cyan)" stroke-width="2.5"/>
+            <circle class="sig-ring r2" r="46" fill="none" stroke="var(--cyan)" stroke-width="2.5"/>
+            <circle class="sig-ring r3" r="46" fill="none" stroke="var(--cyan)" stroke-width="2.5"/>
+          </g>
+          <!-- beam to the phone on the sidewalk -->
+          <path d="M304 44 Q360 150 419 264" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="2.5 7" stroke-linecap="round" opacity="0.75"/>
+
+          <g transform="translate(300 300)"><use href="#sp-pole-cell"/></g>
+
+          <g transform="translate(408 300)"><g class="scene-bob"><use href="#sp-person-phone"/></g></g>
+          <g transform="translate(540 300)"><g class="scene-walk"><use href="#sp-person-a" style="--shirt:#3F8E7B"/></g></g>
+          <g transform="translate(956 300)"><use href="#sp-person-a" style="--shirt:#D9784A" transform="scale(-1,1)"/></g>
+          <g transform="translate(922 300)"><g class="scene-bob"><use href="#sp-dog" transform="scale(-1,1)"/></g></g>
+          <path d="M949 273 Q936 282 931 288" stroke="#8A5A3B" stroke-width="1.5" fill="none"/>
+        </g>
+
+        <g id="px-front">
+          <rect x="0" y="304" width="1200" height="126" fill="#BCC3CA"/>
+          <rect x="0" y="304" width="1200" height="126" fill="url(#tex-asph)"/>
+          <rect x="0" y="304" width="1200" height="5" fill="#D7DCE1"/>
+          <path d="M0 370 H1200" stroke="#F7F3E4" stroke-width="5" stroke-dasharray="30 26"/>
+          <g transform="translate(0 400)"><g class="scene-car"><use href="#sp-car" style="--car:#EF7D5F"/></g></g>
+        </g>
+      </svg>
+    </div>
   </header>
 
   <main class="wrap">
@@ -32,7 +314,7 @@
       <header class="lab-head">
         <p class="lab-index mono">LAB 01</p>
         <h2>the dial</h2>
-        <p class="lab-blurb">Drag the needle. Every 10&nbsp;dB is a factor of ten in power — every 3&nbsp;dB, a factor of two. The ladder below pins the numbers to signals you already live inside.</p>
+        <p class="lab-blurb">Drag the needle. Every 10&nbsp;dB is a factor of ten in power &mdash; every 3&nbsp;dB, a factor of two. The ladder below pins the numbers to signals you already live inside.</p>
       </header>
       <div class="lab-body">
         <div class="dial-grid">
@@ -80,7 +362,7 @@
       <header class="lab-head">
         <p class="lab-index mono">LAB 02</p>
         <h2>the shape of gain</h2>
-        <p class="lab-blurb">Antennas don&rsquo;t create power, they aim it. Morph between real pattern families, then build a phased array and steer the beam — the amber wedge is the half-power beamwidth.</p>
+        <p class="lab-blurb">Antennas don&rsquo;t create power, they aim it. The panel on the light pole out front morphs between real pattern families &mdash; then becomes a phased array you can steer. The amber wedge is the half-power beamwidth.</p>
       </header>
       <div class="lab-body">
         <div class="gain-grid">
@@ -102,6 +384,18 @@
             </div>
           </div>
           <div class="glass panel gain-controls">
+            <div class="cell-figure scene-anim">
+              <svg viewBox="0 0 96 130" aria-hidden="true">
+                <g transform="translate(58 126) scale(0.42)">
+                  <use href="#sp-pole-cell"/>
+                  <g transform="translate(0 -268)">
+                    <circle class="sig-ring" r="40" fill="none" stroke="var(--violet)" stroke-width="3"/>
+                    <circle class="sig-ring r2" r="40" fill="none" stroke="var(--violet)" stroke-width="3"/>
+                  </g>
+                </g>
+              </svg>
+              <p>the hardware in question: a canister panel antenna, fed by the small cell radio strapped to the light pole below it.</p>
+            </div>
             <p class="readout-label mono">pattern presets</p>
             <div class="chip-row chips-wrap" id="preset-chips">
               <button class="chip" data-preset="isotropic">isotropic</button>
@@ -137,9 +431,45 @@
       <header class="lab-head">
         <p class="lab-index mono">LAB 03</p>
         <h2>the link budget</h2>
-        <p class="lab-blurb">Every link is an argument between gains and losses, fought in dB and settled in picowatts. Stretch the path, switch bands, add rain — and watch the waterfall decide.</p>
+        <p class="lab-blurb">Every link is an argument between gains and losses, fought in dB and settled in picowatts. Stretch the walk from the small cell to the phone, switch bands, add rain &mdash; and watch the waterfall decide.</p>
       </header>
       <div class="lab-body">
+        <div class="glass street-panel scene-anim">
+          <svg id="street-strip" viewBox="0 -20 1200 236" role="img"
+               aria-label="A log-scale street from the small cell on its light pole to a pedestrian holding a phone: the receiver walks farther away as the distance slider grows.">
+            <rect x="0" y="-20" width="1200" height="172" fill="url(#grad-sky)"/>
+            <rect x="0" y="136" width="1200" height="16" fill="#A9CF90"/>
+            <rect x="0" y="136" width="1200" height="16" fill="url(#tex-grass)"/>
+            <rect x="0" y="152" width="1200" height="20" fill="#E9E4D6"/>
+            <rect x="0" y="152" width="1200" height="20" fill="url(#tex-conc)"/>
+            <rect x="0" y="172" width="1200" height="44" fill="#BCC3CA"/>
+            <rect x="0" y="172" width="1200" height="44" fill="url(#tex-asph)"/>
+            <rect x="0" y="172" width="1200" height="4" fill="#D7DCE1"/>
+            <path d="M0 196 H1200" stroke="#F7F3E4" stroke-width="4" stroke-dasharray="24 22"/>
+
+            <g transform="translate(258 152)"><use href="#sp-house-a" transform="scale(0.55)" style="--wall:#F5C878"/></g>
+            <g transform="translate(492 152)"><use href="#sp-house-b" transform="scale(0.55)" style="--wall:#DE8A6C"/></g>
+            <g transform="translate(762 152)"><use href="#sp-house-c" transform="scale(0.55)"/></g>
+            <g transform="translate(228 152)"><use href="#sp-tree" transform="scale(0.62)" style="--leaf:#5FA55B"/></g>
+            <g transform="translate(628 152)"><use href="#sp-pine" transform="scale(0.6)"/></g>
+            <g transform="translate(1000 152)"><use href="#sp-tree" transform="scale(0.66)" style="--leaf:#6FAF6A"/></g>
+
+            <g transform="translate(90 26)">
+              <circle class="sig-ring" r="34" fill="none" stroke="var(--pink)" stroke-width="2.5"/>
+              <circle class="sig-ring r2" r="34" fill="none" stroke="var(--pink)" stroke-width="2.5"/>
+            </g>
+            <path id="strip-beam" d="M 96 30 Q 340 30 606 136" fill="none" stroke="#4C9F45" stroke-width="2" stroke-dasharray="2.5 7" stroke-linecap="round" opacity="0.8"/>
+            <g transform="translate(90 168)"><use href="#sp-pole-cell" transform="scale(0.55)"/></g>
+
+            <g id="strip-person" transform="translate(600 168)"><use href="#sp-person-phone"/></g>
+            <text id="strip-label" class="mono" x="600" y="205" text-anchor="middle"
+                  font-family="JetBrains Mono, monospace" font-size="12.5" font-weight="700" fill="#4C9F45"
+                  stroke="#FFFFFF" stroke-width="4" paint-order="stroke" stroke-linejoin="round">2.0 km · −64.6 dBm</text>
+
+            <text x="1186" y="210" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9.5" fill="#8A99A8">log-scale street · 0.1 → 30 km</text>
+          </svg>
+        </div>
+
         <div class="stage-row">
           <div class="glass panel stage-card">
             <p class="stage-label mono">TX power</p>
@@ -183,7 +513,7 @@
         <div class="glass panel waterfall-panel">
           <canvas id="waterfall"></canvas>
           <div class="verdict-row">
-            <div class="verdict-pill mono ok" id="lb-verdict">LINK CLOSES &middot; +19.5 dB margin</div>
+            <div class="verdict-pill mono ok" id="lb-verdict">LINK CLOSES &middot; +19.4 dB margin</div>
             <p class="arriving mono" id="lb-arriving">physically arriving: 347 pW</p>
           </div>
         </div>
@@ -202,12 +532,14 @@
         <li>Sector preset is the 3GPP model −min(12(θ/θ₃dB)², 25 dB). Dipole is the exact half-wave pattern [cos(½π·sinθ)/cosθ]². Patch is a stylized cosine-power shape; the yagi is a stylized quadratic-dB main lobe with gaussian side/back lobes — both calibrated to typical peak gains, with beamwidth and F/B measured from the plotted curve, not quoted.</li>
         <li>FSPL(dB) = 32.44 + 20·log₁₀(d_km) + 20·log₁₀(f_MHz). Heavy rain adds α·d with α ≈ 0.01 / 0.1 / 10 dB/km at 900 MHz / 3.6 GHz / 28 GHz (≈50 mm/h, ITU-R P.838 ballpark).</li>
         <li>Noise floor = −174 dBm/Hz + 10·log₁₀(BW) + 7 dB NF, with BW = 10 / 100 / 400 MHz per band. Sensitivity line = floor + 3 dB required SNR. A real modem&rsquo;s number moves with modulation and coding; this one is fixed so the geometry stays legible.</li>
+        <li>The street is an illustration: the LAB 03 walk is drawn on a log-scale axis (0.1 → 30 km), and the buildings are much too close together for their own good.</li>
       </ul>
     </div>
     <p class="colophon mono">decibel &middot; vanilla html / css / js &middot; canvas + svg &middot; no dependencies</p>
   </footer>
 
   <script src="assets/main.js"></script>
+  <script src="assets/scene.js"></script>
   <script src="assets/lab-dial.js"></script>
   <script src="assets/lab-gain.js"></script>
   <script src="assets/lab-link.js"></script>

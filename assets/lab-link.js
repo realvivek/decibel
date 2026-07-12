@@ -111,7 +111,7 @@
 
   const T = DB.tokens;
   const MONOF = '"JetBrains Mono", monospace';
-  const HALO = "rgba(7,11,21,0.9)";
+  const HALO = T.halo;
   const NAMES = ["TX OUT", "CABLE", "TX ANT", "PATH", "RX"];
   const NAMES_S = ["TX", "CBL", "ANT", "PATH", "RX"];
 
@@ -128,6 +128,31 @@
   if (el.bandChips) {
     const act = el.bandChips.querySelector(".chip.is-active");
     if (act && BANDS[+act.getAttribute("data-band")]) state.band = +act.getAttribute("data-band");
+  }
+
+  /* the street strip above the stage cards: receiver walks a log-scale street */
+  const strip = {
+    person: document.getElementById("strip-person"),
+    beam: document.getElementById("strip-beam"),
+    label: document.getElementById("strip-label"),
+  };
+
+  function updateStrip(b) {
+    if (!strip.person) return;
+    const t = DB.clamp(kmToT(state.km), 0, 1);
+    const x = 200 + t * 930;
+    const col = b.margin >= 3 ? "#4C9F45" : b.margin >= 0 ? "#D98E1B" : "#E5548E";
+    strip.person.setAttribute("transform", "translate(" + x.toFixed(1) + " 168)");
+    if (strip.beam) {
+      strip.beam.setAttribute("d",
+        "M 94 28 Q " + ((94 + x) / 2).toFixed(1) + " 6 " + (x + 12).toFixed(1) + " 140");
+      strip.beam.setAttribute("stroke", col);
+    }
+    if (strip.label) {
+      strip.label.setAttribute("x", String(DB.clamp(x, 150, 1080)));
+      strip.label.setAttribute("fill", col);
+      strip.label.textContent = fmtKm(state.km) + " · " + DB.fmtDb(b.rx, "dBm");
+    }
   }
 
   /* path-loss breakdown line, created once inside the stage-path card */
@@ -207,7 +232,7 @@
 
     /* nothing survives below the noise floor: faint pink wash */
     const yFloor = yOf(disp.floor), ySens = yOf(disp.sens);
-    ctx.fillStyle = "rgba(255,92,168,0.05)";
+    ctx.fillStyle = "rgba(229,84,142,0.06)";
     ctx.fillRect(x0, yFloor, x1 - x0, Math.max(0, y1 - yFloor));
 
     ctx.setLineDash([5, 5]);
@@ -368,6 +393,7 @@
     const b = linkBudget(state);
     cur = b;
     updateReadouts(b);
+    updateStrip(b);
 
     const lo = Math.min(Math.min.apply(null, b.levels), b.floor) - 6;
     const hi = Math.max(Math.max.apply(null, b.levels), b.sens) + 6;

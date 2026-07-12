@@ -1,7 +1,8 @@
 # decibel
 
 An interactive playground for decibel math — the logarithmic bookkeeping behind every
-radio link, audio chain, and RF datasheet.
+radio link, audio chain, and RF datasheet — set on a bright, hand-drawn residential
+street where a small cell radio on a light pole serves the neighborhood.
 
 **Live demo:** _(deploy pending)_
 
