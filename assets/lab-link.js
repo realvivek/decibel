@@ -220,18 +220,21 @@
     ctx.setLineDash([]);
     ctx.globalAlpha = 0.85;
     ctx.font = fBase + MONOF;
-    ctx.textAlign = "right";
+    /* left side: the RX stage lives at the right edge, and in the MARGINAL
+       band its labels would overprint right-aligned line labels */
+    ctx.textAlign = "left";
     ctx.fillStyle = T.pink;
     ctx.textBaseline = "top";
-    ctx.fillText("floor " + DB.fmtDb(disp.floor, "dBm", 0), x1 - 2, yFloor + 4);
+    ctx.fillText("floor " + DB.fmtDb(disp.floor, "dBm", 0), x0 + 6, yFloor + 4);
     ctx.fillStyle = T.amber;
     ctx.textBaseline = "alphabetic";
-    ctx.fillText("sens " + DB.fmtDb(disp.sens, "dBm", 0), x1 - 2, ySens - 5);
+    ctx.fillText("sens " + DB.fmtDb(disp.sens, "dBm", 0), x0 + 6, ySens - 5);
     ctx.globalAlpha = 1;
 
-    /* stepped connectors + delta labels */
+    /* stepped connectors; labels are deferred to a pass after the plateau
+       bars so glow strokes never overpaint them */
     const L = disp.levels;
-    ctx.textBaseline = "middle";
+    const deltaLabels = [];
     for (let i = 0; i < 4; i++) {
       const d = L[i + 1] - L[i];
       const bx = x0 + slotW * (i + 1);
@@ -249,19 +252,16 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
 
-      const my = DB.clamp((ya + yb) / 2, y0 + 8, y1 - 8);
+      let my = DB.clamp((ya + yb) / 2, y0 + 8, y1 - 8);
+      // short steps: hoist the label above the step so it can't share a pixel
+      // row with the destination plateau's value/name labels
+      if (Math.abs(ya - yb) < 40) my = Math.max(y0 + 8, Math.min(ya, yb) - 26);
       const right = i === 3;
-      ctx.textAlign = right ? "right" : "left";
-      const lx = right ? bx - 5 : bx + 5;
-      ctx.font = fBase + MONOF;
-      ctx.shadowColor = HALO; ctx.shadowBlur = 4;
-      ctx.fillStyle = col;
-      ctx.fillText(DB.fmtDb(d, "", 1), lx, my);
-      if (i === 2 && cur && cur.rain > 0) {
-        ctx.fillStyle = T.amber;
-        ctx.fillText("rain " + DB.MINUS + cur.rain.toFixed(1), lx, my + (small ? 11 : 13));
-      }
-      ctx.shadowBlur = 0;
+      deltaLabels.push({
+        x: right ? bx - 5 : bx + 5, y: my, col, right,
+        text: DB.fmtDb(d, "", 1),
+        sub: i === 2 && cur && cur.rain > 0 ? "rain " + DB.MINUS + cur.rain.toFixed(1) : null,
+      });
     }
 
     /* glowing plateaus + labels */
@@ -290,6 +290,21 @@
       ctx.font = (small ? "8.5px " : "9.5px ") + MONOF;
       ctx.fillStyle = T.dim;
       ctx.fillText(names[i], cx, Math.min(h - 5, y + (small ? 15 : 17)));
+      ctx.shadowBlur = 0;
+    }
+
+    /* deferred delta labels, over the plateau glow */
+    ctx.textBaseline = "middle";
+    ctx.font = fBase + MONOF;
+    for (const lb of deltaLabels) {
+      ctx.textAlign = lb.right ? "right" : "left";
+      ctx.shadowColor = HALO; ctx.shadowBlur = 4;
+      ctx.fillStyle = lb.col;
+      ctx.fillText(lb.text, lb.x, lb.y);
+      if (lb.sub) {
+        ctx.fillStyle = T.amber;
+        ctx.fillText(lb.sub, lb.x, lb.y + (small ? 11 : 13));
+      }
       ctx.shadowBlur = 0;
     }
 
@@ -342,7 +357,8 @@
       else if (b.margin < 3) coda = " — one wet leaf from silence.";
       else if (b.rx >= -50) coda = " — a firehose, as radio goes.";
       else coda = bulbCoda(watts);
-      el.arriving.textContent = "physically arriving: " + DB.fmtWattsLinear(watts) + coda;
+      // innerHTML: sub-attowatt powers render as mantissa·10<sup>−exp</sup> W
+      el.arriving.innerHTML = "physically arriving: " + DB.fmtWattsLinearHtml(watts) + coda;
     }
   }
 

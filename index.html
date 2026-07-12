@@ -199,7 +199,7 @@
         <li>dB = 10·log₁₀(P₂/P₁); power ratio = 10^(dB/10). dBm is absolute: P = 10^(dBm/10) mW.</li>
         <li>Ladder anchors are typical field values (GPS at the surface ≈ −127 dBm, LTE cell edge ≈ −100 dBm, strong Wi-Fi ≈ −70 dBm, phone uplink ≈ +23 dBm, macro cell ≈ +47 dBm, big FM broadcast ≈ +80 dBm) — real deployments vary.</li>
         <li>Array factor: AF(θ) = sin(Nu/2)/(N·sin(u/2)), u = 2πd(sinθ − sinθ₀), spacing d in wavelengths; plotted as AF² × element pattern. Peak dBi for the array is approximated as element gain + 10·log₁₀(N).</li>
-        <li>Sector preset is the 3GPP model −min(12(θ/θ₃dB)², 25 dB). Dipole is the exact half-wave pattern [cos(½π·sinθ)/cosθ]². Patch and yagi are stylized cosine-power shapes calibrated to typical peak gains — beamwidth and F/B numbers are measured from the plotted curve, not quoted.</li>
+        <li>Sector preset is the 3GPP model −min(12(θ/θ₃dB)², 25 dB). Dipole is the exact half-wave pattern [cos(½π·sinθ)/cosθ]². Patch is a stylized cosine-power shape; the yagi is a stylized quadratic-dB main lobe with gaussian side/back lobes — both calibrated to typical peak gains, with beamwidth and F/B measured from the plotted curve, not quoted.</li>
         <li>FSPL(dB) = 32.44 + 20·log₁₀(d_km) + 20·log₁₀(f_MHz). Heavy rain adds α·d with α ≈ 0.01 / 0.1 / 10 dB/km at 900 MHz / 3.6 GHz / 28 GHz (≈50 mm/h, ITU-R P.838 ballpark).</li>
         <li>Noise floor = −174 dBm/Hz + 10·log₁₀(BW) + 7 dB NF, with BW = 10 / 100 / 400 MHz per band. Sensitivity line = floor + 3 dB required SNR. A real modem&rsquo;s number moves with modulation and coding; this one is fixed so the geometry stays legible.</li>
       </ul>
