@@ -136,7 +136,7 @@
   /* faint full track */
   svgEl("path", {
     d: arcPath(200, 200, ARC_R, A_START, A_START + SWEEP),
-    fill: "none", stroke: "rgba(232,238,249,0.09)", "stroke-width": 10, "stroke-linecap": "round",
+    fill: "none", stroke: "rgba(23,41,60,0.08)", "stroke-width": 10, "stroke-linecap": "round",
   }, svg);
 
   /* inner ring detail */
@@ -168,7 +168,7 @@
     const p2 = polar(200, 200, major ? 170 : 166, a);
     svgEl("line", {
       x1: p1.x.toFixed(2), y1: p1.y.toFixed(2), x2: p2.x.toFixed(2), y2: p2.y.toFixed(2),
-      stroke: major ? "rgba(232,238,249,0.34)" : "rgba(232,238,249,0.15)",
+      stroke: major ? "rgba(23,41,60,0.45)" : "rgba(23,41,60,0.18)",
       "stroke-width": major ? 2 : 1, "stroke-linecap": "round",
     }, gTicks);
   }
@@ -185,17 +185,19 @@
   const gBright = svgEl("g", { "clip-path": "url(#lab1-vclip)", filter: "url(#lab1-glow)" }, svg);
   buildSegments(12, 1, gBright);
 
-  /* needle group, built pointing at 0° (+x), rotated per frame */
+  /* needle group, built pointing at 0° (+x), rotated per frame.
+     Tapered polygon, not a line — a horizontal line has a zero-height
+     bbox and bbox-relative SVG filters render it as nothing. */
   const gNeedle = svgEl("g", { transform: "rotate(270 200 200)" }, svg);
-  svgEl("line", {
-    x1: 230, y1: 200, x2: 318, y2: 200, stroke: "#F4F7FF",
-    "stroke-width": 3, "stroke-linecap": "round", filter: "url(#lab1-glow)",
+  svgEl("path", {
+    d: "M 230 196.6 L 316 198.9 L 316 201.1 L 230 203.4 Z",
+    fill: "#17293C", filter: "url(#lab1-glow)",
   }, gNeedle);
   const tipHalo = svgEl("circle", { cx: 318, cy: 200, r: 8, fill: T.cyan, opacity: 0.55, filter: "url(#lab1-glow-strong)" }, gNeedle);
   const tipDot = svgEl("circle", { cx: 318, cy: 200, r: 5, fill: T.cyan, filter: "url(#lab1-glow)" }, gNeedle);
 
-  /* glassy hub */
-  svgEl("circle", { cx: 200, cy: 200, r: 26, fill: "rgba(19,27,47,0.9)", stroke: "rgba(232,238,249,0.22)", "stroke-width": 1 }, svg);
+  /* hub */
+  svgEl("circle", { cx: 200, cy: 200, r: 26, fill: "#FFFFFF", stroke: "rgba(23,41,60,0.22)", "stroke-width": 1 }, svg);
   const hubText = svgEl("text", {
     x: 200, y: 199, "text-anchor": "middle", fill: T.ink,
     "font-family": MONO, "font-size": 14, "font-weight": 700, "letter-spacing": "-0.03em",
@@ -223,7 +225,7 @@
     ctx.lineJoin = "round";
 
     /* faint track */
-    ctx.strokeStyle = "rgba(232,238,249,0.08)";
+    ctx.strokeStyle = "rgba(23,41,60,0.08)";
     ctx.lineWidth = 6;
     ctx.beginPath(); ctx.moveTo(x0, trackY); ctx.lineTo(x1, trackY); ctx.stroke();
 
@@ -234,7 +236,7 @@
     ctx.textBaseline = "alphabetic";
     for (let v = DB_MIN; v <= DB_MAX; v += 20) {
       const x = powerX(v, w, pad);
-      ctx.strokeStyle = "rgba(232,238,249,0.22)";
+      ctx.strokeStyle = "rgba(23,41,60,0.25)";
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, trackY + 7); ctx.lineTo(x, trackY + 11); ctx.stroke();
       if ((v - DB_MIN) % lblStep === 0) {
@@ -261,7 +263,7 @@
 
     /* glowing marker */
     ctx.shadowColor = c; ctx.shadowBlur = 12;
-    ctx.strokeStyle = "rgba(244,247,255,0.95)";
+    ctx.strokeStyle = "rgba(23,41,60,0.9)";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(mx, trackY - 11); ctx.lineTo(mx, trackY + 11); ctx.stroke();
     ctx.fillStyle = c;
@@ -309,7 +311,7 @@
     ctx.strokeStyle = T.grid;
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(0, axisY); ctx.lineTo(w, axisY); ctx.stroke();
-    ctx.strokeStyle = "rgba(232,238,249,0.16)";
+    ctx.strokeStyle = "rgba(23,41,60,0.20)";
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, axisY); ctx.lineTo(w, axisY); ctx.stroke();
 
@@ -323,7 +325,7 @@
       if (a <= 0) continue;
       const major = v % 10 === 0;
       ctx.globalAlpha = a * (major ? 0.55 : 0.28);
-      ctx.strokeStyle = "rgba(232,238,249,0.9)";
+      ctx.strokeStyle = "rgba(23,41,60,0.85)";
       ctx.lineWidth = 1;
       const th = major ? 7 : 4;
       ctx.beginPath(); ctx.moveTo(x, axisY - th); ctx.lineTo(x, axisY + th); ctx.stroke();
@@ -345,7 +347,7 @@
     ctx.shadowBlur = 0;
 
     /* anchors, staggered above/below the axis */
-    const halo = "rgba(7,11,21,0.9)";
+    const halo = T.halo;
     for (let i = 0; i < ANCHORS.length; i++) {
       const an = ANCHORS[i];
       const x = ladderX(an.db, shown, w, SPAN);

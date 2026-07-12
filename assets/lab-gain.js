@@ -293,9 +293,9 @@
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, R, a0, a1, false);
     ctx.closePath();
-    ctx.fillStyle = "rgba(255,194,75,0.09)";
+    ctx.fillStyle = "rgba(233,162,59,0.15)";
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,194,75,0.55)";
+    ctx.strokeStyle = "rgba(196,128,27,0.6)";
     ctx.lineWidth = 1;
     for (const deg of [wd.start, wd.end]) {
       const th = deg * D2R;
@@ -365,7 +365,7 @@
     drawGrid(ctx, cx, cy, R);
     if (state.preset === "array") {
       ctx.save();
-      ctx.strokeStyle = "rgba(232,238,249,0.16)";
+      ctx.strokeStyle = "rgba(23,41,60,0.25)";
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 5]);
       tracePath(ctx, elemRel, cx, cy, R, 0);

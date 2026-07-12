@@ -1,35 +1,47 @@
 # decibel
 
-An interactive dB-math playground. Three "labs" teach decibel intuition: a draggable
-dial (dB ↔ ratio ↔ watts), a polar antenna-pattern explorer with a phased-array
-builder, and a link-budget waterfall.
+An interactive dB-math playground set on a bright residential small-cell street.
+Three "labs" teach decibel intuition: a draggable dial (dB ↔ ratio ↔ watts), a polar
+antenna-pattern explorer with a phased-array builder, and a link-budget waterfall whose
+receiver literally walks down the street. The recurring hero object is a light pole
+carrying a small cell radio and a canister panel antenna.
 
 ## Stack — deliberately boring
 
 Static HTML/CSS/JS. **No build step, no dependencies, no framework, no modules.**
-Plain `<script>` tags in order: `main.js` → `lab-dial.js` → `lab-gain.js` → `lab-link.js`.
-Rendering is hand-rolled canvas 2D + SVG. Fonts (Space Grotesk, JetBrains Mono; OFL)
-are self-hosted in `assets/fonts/` — the site makes zero external requests.
+Plain `<script>` tags in order: `main.js` → `scene.js` → `lab-dial.js` → `lab-gain.js`
+→ `lab-link.js`. Rendering is hand-rolled canvas 2D + SVG; the street scenes are inline
+SVG sprites (`<defs>` at the top of index.html) reused via `<use>` with per-instance CSS
+custom properties (`--wall`, `--leaf`, …) and texture `<pattern>`s. Fonts (Space Grotesk,
+JetBrains Mono; OFL) are self-hosted in `assets/fonts/` — the site makes zero external
+requests.
 
 ```
-index.html            all markup for the three labs + MODEL NOTES footer
-assets/styles.css     design system (tokens, glass panels, chips, sliders)
+index.html            sprite/texture defs, hero street scene, three labs, MODEL NOTES
+assets/styles.css     design system (tokens, cards, chips, sliders, scene animations)
 assets/main.js        shared utils on window.DB (tween, hi-DPI canvas, formatters)
+assets/scene.js       hero parallax + offscreen pausing of scene animations
 assets/lab-dial.js    LAB 01 — the dial            (exposes window.LAB1, LAB1_MATH)
 assets/lab-gain.js    LAB 02 — the shape of gain   (exposes window.LAB2, LAB2_MATH)
-assets/lab-link.js    LAB 03 — the link budget     (exposes window.LAB3, LAB3_MATH)
+assets/lab-link.js    LAB 03 — the link budget     (exposes window.LAB3, LAB3_MATH;
+                      also drives the #street-strip walker)
 ```
 
 ## Conventions
 
-- Design tokens live in `:root` in styles.css and in `DB.tokens` in main.js — keep them
-  in sync: bg `#0A0F1A`, cyan `#38E1FF`, violet `#8B7CFF`, pink `#FF5CA8`,
-  amber `#FFC24B` (reserved for −3 dB / sensitivity markers), lime `#B7F34D` (success).
+- Bright daylight theme — dark backgrounds are banned. Design tokens live in `:root`
+  in styles.css and in `DB.tokens` in main.js — keep them in sync: bg `#EEF4F8`,
+  ink `#17293C`, cyan `#0999C4`, violet `#6C5CE7`, pink `#E5548E`, amber `#E9A23B`
+  (reserved for −3 dB / sensitivity markers), lime `#4C9F45` (success),
+  halo `rgba(255,255,255,0.92)` (text halos over canvas art).
 - Each lab file is one IIFE: pure math first, exposed on `window.LABn_MATH`, then a DOM
   guard (`if (!container) return`). Every lab file must eval cleanly in Node with only
   `global.window = {}` and a stub `document` — that's what the math tests rely on.
-- Canvases never paint opaque backgrounds (glass panels sit behind them); rAF loops must
-  self-stop when values settle.
+- Canvases never paint opaque backgrounds (white cards sit behind them); rAF loops must
+  self-stop when values settle. Scene animations are CSS; they pause offscreen and are
+  disabled entirely under prefers-reduced-motion.
+- SVG filter gotcha: never apply a bbox-relative filter to a horizontal/vertical line —
+  its zero-area bbox makes the element vanish. Use a thin polygon instead.
 - Keep the MODEL NOTES footer honest: if you change a formula or a constant, update it.
 - Git identity for commits: `realvivek <realvivek@users.noreply.github.com>`.
 

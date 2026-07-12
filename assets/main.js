@@ -3,15 +3,16 @@
   "use strict";
 
   const tokens = {
-    bg: "#0A0F1A",
-    ink: "#E8EEF9",
-    dim: "#8A94AB",
-    grid: "rgba(232,238,249,0.07)",
-    cyan: "#38E1FF",
-    violet: "#8B7CFF",
-    pink: "#FF5CA8",
-    amber: "#FFC24B",
-    lime: "#B7F34D",
+    bg: "#EEF4F8",
+    ink: "#17293C",
+    dim: "#5D6E82",
+    grid: "rgba(23,41,60,0.10)",
+    halo: "rgba(255,255,255,0.92)", // text halo over canvas art
+    cyan: "#0999C4",
+    violet: "#6C5CE7",
+    pink: "#E5548E",
+    amber: "#E9A23B",
+    lime: "#4C9F45",
   };
 
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
