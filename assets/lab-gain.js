@@ -316,10 +316,10 @@
   function drawMainCurve(ctx, cx, cy, R) {
     const rel = state.dispRel;
     if (!rel) return;
-    let m = -Infinity, pi = 0;
-    for (let i = 0; i < N_SAMPLES; i++) {
-      if (rel[i] > m) { m = rel[i]; pi = i; }
-    }
+    // peakIndex, not a plain max scan: ties (dipole figure-8, isotropic)
+    // must resolve to the boresight lobe, same as the wedge and stats
+    const pi = peakIndex(rel);
+    const m = rel[pi];
     const grad = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
     grad.addColorStop(0, DB.tokens.cyan);
     grad.addColorStop(0.5, DB.tokens.violet);
@@ -458,6 +458,8 @@
     state.preset = name;
     chips.forEach((b) => b.classList.toggle("is-active", b.dataset.preset === name));
     builder.classList.toggle("is-disabled", name !== "array");
+    // really disable — pointer-events:none alone leaves them keyboard-operable
+    [nEl, dEl, steerEl].forEach((i) => { i.disabled = name !== "array"; });
     note.textContent = NOTES[name];
     retarget(dur == null ? 650 : dur);
   }

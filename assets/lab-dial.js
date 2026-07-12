@@ -99,8 +99,10 @@
   let target = 0;
   let shown = 0;
   let dragging = false;
+  let activePointer = null;
   let tweening = false;
   let chipTween = null;
+  let chipDest = null; // tween destination, so rapid chip clicks compound from it
   let lastAria = "";
 
   /* ---------- dial SVG (static geometry built once) ---------- */
@@ -365,14 +367,19 @@
       ctx.beginPath(); ctx.arc(x, axisY + dir * 32, 3, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
 
-      /* two-line label: value adjacent to the dot, description outward */
+      /* two-line label: value adjacent to the dot, description outward.
+         Clamp text x inside the canvas — a centered label at the edge would
+         otherwise clip mid-glyph ("−70 dBm" reading as "0 dBm"). */
       ctx.shadowColor = halo; ctx.shadowBlur = 4;
       ctx.font = '10.5px "JetBrains Mono", monospace';
       ctx.fillStyle = col;
-      ctx.fillText(fmtAnchorDb(an.db), x, axisY + (dir < 0 ? -44 : 48));
+      const vTxt = fmtAnchorDb(an.db);
+      const vHalf = ctx.measureText(vTxt).width / 2;
+      ctx.fillText(vTxt, DB.clamp(x, vHalf + 2, w - vHalf - 2), axisY + (dir < 0 ? -44 : 48));
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = T.dim;
-      ctx.fillText(an.txt, x, axisY + (dir < 0 ? -58 : 62));
+      const dHalf = ctx.measureText(an.txt).width / 2;
+      ctx.fillText(an.txt, DB.clamp(x, dHalf + 2, w - dHalf - 2), axisY + (dir < 0 ? -58 : 62));
       ctx.shadowBlur = 0;
     }
     ctx.globalAlpha = 1;
@@ -405,7 +412,7 @@
       roDb.classList.toggle("pos", shown > 0.05);
       roDb.classList.toggle("neg", shown < -0.05);
     }
-    if (roRatio) roRatio.textContent = DB.fmtRatio(shown);
+    if (roRatio) roRatio.innerHTML = DB.fmtRatioHtml(shown);
     if (roWatts) roWatts.textContent = DB.fmtWatts(shown);
 
     const av = (Math.round(shown * 10) / 10).toFixed(1);
@@ -447,6 +454,7 @@
   function cancelChipTween() {
     if (chipTween) { chipTween.cancel(); chipTween = null; }
     tweening = false;
+    chipDest = null;
   }
 
   /* ---------- interaction ---------- */
@@ -462,17 +470,24 @@
 
   stage.addEventListener("pointerdown", (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (dragging) return; // one pointer drives the dial; ignore extra touches
     e.preventDefault();
+    stage.focus({ preventScroll: true }); // preventDefault suppresses click-to-focus
     cancelChipTween();
     dragging = true;
+    activePointer = e.pointerId;
     try { stage.setPointerCapture(e.pointerId); } catch (_) { /* capture unsupported */ }
     target = pointToDb(e);
     kick();
   });
   stage.addEventListener("pointermove", (e) => {
-    if (dragging) target = pointToDb(e);
+    if (dragging && e.pointerId === activePointer) target = pointToDb(e);
   });
-  const endDrag = () => { dragging = false; };
+  const endDrag = (e) => {
+    if (e.pointerId !== activePointer) return;
+    dragging = false;
+    activePointer = null;
+  };
   stage.addEventListener("pointerup", endDrag);
   stage.addEventListener("pointercancel", endDrag);
 
@@ -501,14 +516,18 @@
   if (chipsWrap) {
     chipsWrap.querySelectorAll("[data-step]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        cancelChipTween();
         const step = btn.getAttribute("data-step");
-        const to = step === "reset" ? 0 : cl(target + parseFloat(step));
+        // rapid clicks must compound from the tween's destination, not its
+        // mid-flight value — +3 twice is +6, always
+        const base = tweening && chipDest !== null ? chipDest : target;
+        cancelChipTween();
+        const to = step === "reset" ? 0 : cl(base + parseFloat(step));
         tweening = true;
+        chipDest = to;
         chipTween = DB.tween({
           from: target, to, dur: 450, ease: DB.easeInOutCubic,
           onUpdate: (v) => { target = v; },
-          onDone: () => { tweening = false; chipTween = null; },
+          onDone: () => { tweening = false; chipTween = null; chipDest = null; },
         });
         kick();
       });

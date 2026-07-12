@@ -34,6 +34,12 @@ check("fmtWatts: −127 dBm = 200 aW", DB.fmtWatts(-127) === "200 aW", DB.fmtWat
 check("fmtWatts: −60 dBm = 1.00 nW (not 1000 pW)", DB.fmtWatts(-60) === "1.00 nW", DB.fmtWatts(-60));
 check("fmtWatts: −30 dBm = 1.00 µW", DB.fmtWatts(-30) === "1.00 µW", DB.fmtWatts(-30));
 check("fmtWattsLinear: 1e-9 W = 1.00 nW", DB.fmtWattsLinear(1e-9) === "1.00 nW", DB.fmtWattsLinear(1e-9));
+check("fmtWattsLinear: sub-attowatt goes scientific", DB.fmtWattsLinear(2.56e-44) === "2.56·10⁻⁴⁴ W",
+  DB.fmtWattsLinear(2.56e-44));
+check("fmtWattsLinearHtml: sub-attowatt uses <sup>", DB.fmtWattsLinearHtml(2.56e-44) === "2.56·10<sup>−44</sup> W",
+  DB.fmtWattsLinearHtml(2.56e-44));
+check("fmtRatioHtml: negative exponent uses <sup> minus", DB.fmtRatioHtml(-40) === "×1.00·10<sup>−4</sup>",
+  DB.fmtRatioHtml(-40));
 
 /* ---- LAB 1: dial geometry ---- */
 check("dial: −60 dB at 135°", near(L1.valueToAngle(-60), 135, 1e-9));

@@ -110,6 +110,9 @@ async function main() {
   await page.waitForTimeout(600);
   const failCls = await page.getAttribute("#lb-verdict", "class");
   check("lab3 rain fail verdict", /fail/.test(failCls), failCls);
+  const arriving = await page.innerHTML("#lb-arriving");
+  check("lab3 deep-fail watts go scientific, no zero-string",
+    /·10<sup>/.test(arriving) && !/0\.0000/.test(arriving), arriving.slice(0, 80));
   await page.evaluate(() => window.LAB3.set({ km: 2, band: 3600, rain: false }));
   await page.waitForTimeout(600);
   const okCls = await page.getAttribute("#lb-verdict", "class");
