@@ -1,0 +1,72 @@
+name: deploy-to-render
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/decibel-project-setup-xovup4]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: create service if needed, then wait for the deploy
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RENDER_API_KEY:-}" ]; then
+            echo "::error::RENDER_API_KEY secret is empty or missing — check repo Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          API=https://api.render.com/v1
+          AUTH="Authorization: Bearer $RENDER_API_KEY"
+
+          LIST=$(curl -sf -H "$AUTH" "$API/services?limit=100")
+          SID=$(echo "$LIST" | jq -r '.[] | select((.service.repo // "") | test("realvivek/decibel")) | .service.id' | head -1)
+
+          if [ -z "$SID" ]; then
+            echo "no existing service — creating the static site"
+            CREATE=$(curl -sS -X POST -H "$AUTH" -H "Content-Type: application/json" "$API/services" -d '{
+              "type": "static_site",
+              "name": "decibel",
+              "ownerId": "tea-d95ciprtqb8s73emcicg",
+              "repo": "https://github.com/realvivek/decibel",
+              "branch": "claude/decibel-project-setup-xovup4",
+              "autoDeploy": "yes",
+              "serviceDetails": { "publishPath": "." }
+            }')
+            SID=$(echo "$CREATE" | jq -r '.service.id // empty')
+            if [ -z "$SID" ]; then
+              echo "::error::service creation failed: $(echo "$CREATE" | jq -c .)"
+              exit 1
+            fi
+          fi
+          echo "service id: $SID"
+
+          URL=$(curl -sf -H "$AUTH" "$API/services/$SID" | jq -r '.serviceDetails.url')
+          echo "service url: $URL"
+
+          # make sure a deploy is running for the current commit, then wait for live
+          curl -sS -X POST -H "$AUTH" -H "Content-Type: application/json" "$API/services/$SID/deploys" -d '{}' >/dev/null || true
+          ST=""
+          for i in $(seq 1 60); do
+            ST=$(curl -sf -H "$AUTH" "$API/services/$SID/deploys?limit=1" | jq -r '.[0].deploy.status')
+            echo "deploy status: $ST"
+            [ "$ST" = "live" ] && break
+            case "$ST" in *failed*|*canceled*) echo "::error::deploy ended as $ST"; exit 1;; esac
+            sleep 10
+          done
+          if [ "$ST" != "live" ]; then
+            echo "::error::deploy did not reach live in time"
+            exit 1
+          fi
+
+          # the edge flaps on fresh services — require 5 clean reads in a row
+          OK=0
+          for i in $(seq 1 40); do
+            if curl -sf "$URL" | grep -q "LAB 03"; then OK=$((OK+1)); else OK=0; fi
+            echo "content check $i: streak $OK"
+            [ "$OK" -ge 5 ] && { echo "LIVE AND STABLE: $URL"; exit 0; }
+            sleep 5
+          done
+          echo "::warning::content flapped — site is deployed but still propagating: $URL"
