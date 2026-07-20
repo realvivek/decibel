@@ -72,10 +72,14 @@ and some browsers behave better over http.)
 
 ## Deploy
 
-Render static site (API: `https://api.render.com/v1`), owner `tea-d95ciprtqb8s73emcicg`,
-branch `main`, publish path `.`, autoDeploy on. Needs `RENDER_API_KEY` in the env.
-After creating a deploy, poll it for the pushed commit SHA, then hit the live URL until
-content is stable (fresh services flap while the edge propagates).
+Live at **https://decibel-34c7.onrender.com** — a Render static site (owner
+`tea-d95ciprtqb8s73emcicg`, publish path `.`) tracking branch
+`claude/decibel-project-setup-xovup4` (this repo's only branch) with autoDeploy on:
+**every push deploys**. The `RENDER_API_KEY` lives in the repo's GitHub Actions
+secrets, so API work happens in `.github/workflows/deploy.yml` (runs on push and
+manual dispatch; it created the service and verifies each deploy with five
+consecutive clean reads of the live URL — fresh edges flap while propagating, and
+a stray 404 during propagation can get edge-cached until the next deploy purges it).
 
 ## Roadmap (one slice at a time, screenshot each)
 
