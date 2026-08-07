@@ -3,7 +3,7 @@ name: deploy-to-render
 on:
   workflow_dispatch:
   push:
-    branches: [claude/decibel-project-setup-xovup4]
+    branches: [main]
 
 jobs:
   deploy:
@@ -31,7 +31,7 @@ jobs:
               "name": "decibel",
               "ownerId": "tea-d95ciprtqb8s73emcicg",
               "repo": "https://github.com/realvivek/decibel",
-              "branch": "claude/decibel-project-setup-xovup4",
+              "branch": "main",
               "autoDeploy": "yes",
               "serviceDetails": { "publishPath": "." }
             }')
@@ -42,6 +42,9 @@ jobs:
             fi
           fi
           echo "service id: $SID"
+
+          # make sure the service pulls from main, wherever it pointed before
+          curl -sS -X PATCH -H "$AUTH" -H "Content-Type: application/json" "$API/services/$SID" -d '{"branch":"main"}' >/dev/null || true
 
           URL=$(curl -sf -H "$AUTH" "$API/services/$SID" | jq -r '.serviceDetails.url')
           echo "service url: $URL"
